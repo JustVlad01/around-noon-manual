@@ -1,0 +1,60 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1>Driver Dashboard</h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs nav-fill mb-4">
+        <li class="nav-item">
+          <a class="nav-link active" [routerLink]="['/driver']" routerLinkActive="active">Drivers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [routerLink]="['/manager/login']" routerLinkActive="active">Manager</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Search Store</h5>
+          <form (ngSubmit)="searchStore()">
+            <div class="mb-3">
+              <label for="storeCode" class="form-label">Store Code</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="storeCode" 
+                [(ngModel)]="storeCode" 
+                name="storeCode" 
+                required
+              >
+            </div>
+            <div *ngIf="showError" class="alert alert-danger">
+              Store not found. Please check the store code and try again.
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center" *ngIf="storeList.length > 0">
+    <div class="col-md-8">
+      <h5>Recent Stores</h5>
+      <div class="list-group">
+        <a *ngFor="let store of storeList" 
+           [routerLink]="['/store', store.store_code]" 
+           class="list-group-item list-group-item-action">
+          {{ store.store_code }} - {{ store.store_address }}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

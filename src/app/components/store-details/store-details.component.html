@@ -1,0 +1,214 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1>Store Details</h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs nav-fill mb-4">
+        <li class="nav-item">
+          <a class="nav-link" [routerLink]="['/driver']" routerLinkActive="active">Drivers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [routerLink]="['/manager/login']" routerLinkActive="active">Manager</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      
+      <div *ngIf="!loading && !store" class="alert alert-danger">
+        Store not found
+      </div>
+      
+      <div *ngIf="!loading && store" class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ store.store_code }}</h5>
+          <h6 class="card-subtitle mb-2 text-muted">{{ store.store_address }}</h6>
+          
+          <p class="card-text mt-3">{{ store.description }}</p>
+          
+          <div *ngIf="store.alarm_code" class="mb-3 alert alert-info">
+            <strong>Alarm Code:</strong> {{ store.alarm_code }}
+          </div>
+          
+          <div *ngIf="store.google_maps_url" class="mb-3">
+            <a [href]="store.google_maps_url" class="btn btn-sm btn-outline-primary" target="_blank">
+              <i class="bi bi-geo-alt"></i> Google Maps Directions
+            </a>
+          </div>
+          
+          <!-- Legacy support for older store images -->
+          <div *ngIf="storeImages.length > 0 && storeContents.length === 0" class="mt-4">
+            <h6>Store Images</h6>
+            <div class="row">
+              <div *ngFor="let image of storeImages" class="col-md-4 mb-3">
+                <img [src]="image.image_url" class="img-fluid store-image cursor-pointer" 
+                     (click)="openImage(image.image_url, imageModal)">
+              </div>
+            </div>
+          </div>
+          
+          <!-- New mixed content display -->
+          <div *ngIf="storeContents.length > 0" class="mt-4">
+            <h6>Store Information</h6>
+            <div class="store-content-container">
+              <div *ngFor="let content of storeContents" class="mb-4">
+                <!-- Text content -->
+                <div *ngIf="content.content_type === 'text'" class="text-content d-flex justify-content-between align-items-start">
+                  <div>
+                    <p>{{ content.text_content }}</p>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- Bullet list content -->
+                <div *ngIf="content.content_type === 'bullet-list'" class="bullet-list-content d-flex justify-content-between align-items-start">
+                  <div>
+                    <ul>
+                      <li *ngFor="let point of content.bullet_points">{{ point }}</li>
+                    </ul>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- Image content -->
+                <div *ngIf="content.content_type === 'image' && content.image_url" class="image-content d-flex justify-content-between align-items-start">
+                  <div>
+                    <img [src]="content.image_url" class="img-fluid store-image cursor-pointer" 
+                         (click)="openImage(content.image_url, imageModal)">
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Add Content Button and Form -->
+          <div class="mt-4 mb-3">
+            <button class="btn btn-outline-primary" (click)="toggleAddContentForm()">
+              {{ showAddContentForm ? 'Hide Content Form' : 'Add Additional Content' }}
+            </button>
+            
+            <div *ngIf="showAddContentForm" class="mt-3 p-3 border rounded">
+              <div *ngIf="errorMessage" class="alert alert-danger">
+                {{ errorMessage }}
+              </div>
+              <div *ngIf="successMessage" class="alert alert-success">
+                {{ successMessage }}
+              </div>
+              
+              <!-- Add Text Content -->
+              <div class="mb-4">
+                <h6>Add Text Content</h6>
+                <div class="input-group mb-3">
+                  <textarea 
+                    class="form-control" 
+                    placeholder="Enter text content here..." 
+                    [(ngModel)]="newTextContent"
+                    rows="3"
+                  ></textarea>
+                  <button 
+                    class="btn btn-outline-primary" 
+                    type="button"
+                    [disabled]="!newTextContent.trim()"
+                    (click)="addTextContentItem()"
+                  >
+                    Add Text
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Add Bullet List Content -->
+              <div class="mb-4">
+                <h6>Add Bullet Point List</h6>
+                <div class="input-group mb-3">
+                  <textarea 
+                    class="form-control" 
+                    placeholder="Enter each bullet point on a new line..." 
+                    [(ngModel)]="newBulletPoints"
+                    rows="4"
+                  ></textarea>
+                  <button 
+                    class="btn btn-outline-primary" 
+                    type="button"
+                    [disabled]="!newBulletPoints.trim()"
+                    (click)="addBulletListContent()"
+                  >
+                    Add Bullet List
+                  </button>
+                </div>
+                <small class="text-muted">Enter each bullet point on a separate line</small>
+              </div>
+              
+              <!-- Upload Images -->
+              <div class="mb-4">
+                <h6>Upload Images</h6>
+                <div class="input-group mb-2">
+                  <input 
+                    type="file" 
+                    class="form-control" 
+                    id="newImages" 
+                    multiple
+                    (change)="onFileSelect($event)"
+                  >
+                  <button 
+                    class="btn btn-outline-primary" 
+                    type="button"
+                    [disabled]="selectedFiles.length === 0 || uploadingFiles"
+                    (click)="uploadContentImage()"
+                  >
+                    Upload
+                  </button>
+                </div>
+                <small class="text-muted">You can select multiple images</small>
+                
+                <div *ngIf="uploadingFiles" class="progress mt-2">
+                  <div 
+                    class="progress-bar" 
+                    role="progressbar" 
+                    [style.width]="uploadProgress + '%'" 
+                    [attr.aria-valuenow]="uploadProgress" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                    {{uploadProgress}}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-3">
+            <button class="btn btn-primary" [routerLink]="['/driver']">Back to Driver Dashboard</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal template for displaying full-size images -->
+<ng-template #imageModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Store Image</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body text-center">
+    <img [src]="selectedImage" class="img-fluid">
+  </div>
+</ng-template>

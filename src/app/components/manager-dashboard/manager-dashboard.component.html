@@ -1,0 +1,253 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1>Manager Dashboard</h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs nav-fill mb-4">
+        <li class="nav-item">
+          <a class="nav-link" [routerLink]="['/driver']" routerLinkActive="active">Drivers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" [routerLink]="['/manager']" routerLinkActive="active">Manager</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Store Form Section -->
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ editMode ? 'Edit Store' : 'Add New Store' }}</h5>
+          <form (ngSubmit)="saveStore()">
+            <div class="mb-3">
+              <label for="storeCode" class="form-label">Store Code*</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="storeCode" 
+                [(ngModel)]="currentStore.store_code" 
+                name="storeCode" 
+                required
+                [disabled]="editMode"
+              >
+            </div>
+            <div class="mb-3">
+              <label for="storeAddress" class="form-label">Store Address*</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="storeAddress" 
+                [(ngModel)]="currentStore.store_address" 
+                name="storeAddress" 
+                required
+              >
+            </div>
+            <div class="mb-3">
+              <label for="googleMapsUrl" class="form-label">Google Maps URL</label>
+              <input 
+                type="url" 
+                class="form-control" 
+                id="googleMapsUrl" 
+                [(ngModel)]="currentStore.google_maps_url" 
+                name="googleMapsUrl"
+              >
+            </div>
+            <div class="mb-3">
+              <label for="alarmCode" class="form-label">Alarm Code (Optional)</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="alarmCode" 
+                [(ngModel)]="currentStore.alarm_code" 
+                name="alarmCode"
+                placeholder="Enter store alarm code if applicable"
+              >
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea 
+                class="form-control" 
+                id="description" 
+                [(ngModel)]="currentStore.description" 
+                name="description" 
+                rows="4"
+              ></textarea>
+            </div>
+            
+            <div class="mb-3">
+              <button type="submit" class="btn btn-primary w-100" [disabled]="saving">
+                {{ saving ? 'Saving...' : (editMode ? 'Update Store' : 'Add Store') }}
+              </button>
+            </div>
+            
+            <div *ngIf="errorMessage" class="alert alert-danger">
+              {{ errorMessage }}
+            </div>
+            <div *ngIf="successMessage" class="alert alert-success">
+              {{ successMessage }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Contents Section (only visible in edit mode) -->
+  <div *ngIf="editMode" class="row justify-content-center mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Store Contents</h5>
+          
+          <!-- Add Text Content -->
+          <div class="mb-4">
+            <h6>Add Text Content</h6>
+            <div class="input-group mb-3">
+              <textarea 
+                class="form-control" 
+                placeholder="Enter text content here..." 
+                [(ngModel)]="newTextContent"
+                rows="3"
+              ></textarea>
+              <button 
+                class="btn btn-outline-primary" 
+                type="button"
+                [disabled]="!newTextContent.trim()"
+                (click)="addTextContentItem()"
+              >
+                Add Text
+              </button>
+            </div>
+          </div>
+          
+          <!-- Add Bullet List Content -->
+          <div class="mb-4">
+            <h6>Add Bullet Point List</h6>
+            <div class="input-group mb-3">
+              <textarea 
+                class="form-control" 
+                placeholder="Enter each bullet point on a new line..." 
+                [(ngModel)]="newBulletPoints"
+                rows="4"
+              ></textarea>
+              <button 
+                class="btn btn-outline-primary" 
+                type="button"
+                [disabled]="!newBulletPoints.trim()"
+                (click)="addBulletListContent()"
+              >
+                Add Bullet List
+              </button>
+            </div>
+            <small class="text-muted">Enter each bullet point on a separate line</small>
+          </div>
+          
+          <!-- Upload Images -->
+          <div class="mb-4">
+            <h6>Upload Images</h6>
+            <div class="input-group mb-2">
+              <input 
+                type="file" 
+                class="form-control" 
+                id="newImages" 
+                multiple
+                (change)="onFileSelect($event)"
+              >
+              <button 
+                class="btn btn-outline-primary" 
+                type="button"
+                [disabled]="selectedFiles.length === 0 || uploadingFiles"
+                (click)="uploadContentImage()"
+              >
+                Upload
+              </button>
+            </div>
+            <small class="text-muted">You can select multiple images</small>
+            
+            <div *ngIf="uploadingFiles" class="progress mt-2">
+              <div 
+                class="progress-bar" 
+                role="progressbar" 
+                [style.width]="uploadProgress + '%'" 
+                [attr.aria-valuenow]="uploadProgress" 
+                aria-valuemin="0" 
+                aria-valuemax="100">
+                {{uploadProgress}}%
+              </div>
+            </div>
+          </div>
+          
+          <!-- Display Store Contents -->
+          <div *ngIf="storeContents.length > 0" class="mb-3">
+            <h6>Current Content (in display order)</h6>
+            <div class="list-group">
+              <div *ngFor="let content of storeContents" class="list-group-item">
+                <!-- Text Content -->
+                <div *ngIf="content.content_type === 'text'" class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-1">{{ content.text_content }}</p>
+                    <small class="text-muted">Text content</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- Bullet List Content -->
+                <div *ngIf="content.content_type === 'bullet-list'" class="d-flex justify-content-between align-items-center">
+                  <div class="w-100">
+                    <ul class="mb-1">
+                      <li *ngFor="let point of content.bullet_points">{{ point }}</li>
+                    </ul>
+                    <small class="text-muted">Bullet list</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- Image Content -->
+                <div *ngIf="content.content_type === 'image'" class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <img [src]="content.image_url" class="img-fluid store-image" style="max-height: 150px;">
+                    <small class="text-muted d-block">Image content</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteContent(content.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="storeContents.length === 0" class="alert alert-info">
+            No content has been added to this store yet.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store List Section -->
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <h5>All Stores</h5>
+      <div class="list-group">
+        <a *ngFor="let store of storeList" 
+           (click)="editStore(store)"
+           class="list-group-item list-group-item-action cursor-pointer">
+          <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ store.store_code }}</h5>
+          </div>
+          <p class="mb-1">{{ store.store_address }}</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
